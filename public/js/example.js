@@ -1,6 +1,4 @@
-$(window).load(function() {
-
-  // Last updated August 2010 by Simon Sarris
+// Last updated August 2010 by Simon Sarris
 // www.simonsarris.com
 // sarris@acm.org
 //
@@ -101,10 +99,15 @@ function init() {
   // add custom initialization here:
   
   // add an orange rectangle
-  addRect(200, 200, 100, 100, 'rgba(100,200,0,.5');
+  addRect(200, 200, 40, 40, '#FFC02B');
   
   // add a smaller blue rectangle
-  addRect(25, 90, 75, 75, 'rgba(100,0,200,.5');
+  addRect(25, 90, 25, 25, '#2BB8FF');
+}
+
+//wipes the canvas context
+function clear(c) {
+  c.clearRect(0, 0, WIDTH, HEIGHT);
 }
 
 // While draw is called as often as the INTERVAL variable demands,
@@ -127,28 +130,13 @@ function draw() {
       ctx.strokeStyle = mySelColor;
       ctx.lineWidth = mySelWidth;
       ctx.strokeRect(mySel.x,mySel.y,mySel.w,mySel.h);
-      var l = boxes.length;
-      for (var i = 0; i < l; i++) {
-        box = boxes[i]
-        if (mySel === box) {
-          //do nothing
-        } else {
-          if (rect_collision(mySel.x,mySel.y,mySel.w,box.x,box.y,box.w)) {
-            console.log('overlap!');
-          };
-        }
-      }
     }
     
     // Add stuff you want drawn on top all the time here
     
+    
     canvasValid = true;
   }
-}
-
-//wipes the canvas context
-function clear(c) {
-  c.clearRect(0, 0, WIDTH, HEIGHT);
 }
 
 // Draws a single shape to a single context
@@ -254,25 +242,7 @@ function getMouse(e) {
       mx = e.pageX - offsetX;
       my = e.pageY - offsetY
 }
+
 // If you dont want to use <body onLoad='init()'>
 // You could uncomment this init() reference and place the script reference inside the body tag
-
-//
-
-rect_collision = function(x1, y1, size1, x2, y2, size2) {
-  var bottom1, bottom2, left1, left2, right1, right2, top1, top2;
-  left1 = x1 - (size1/2);
-  right1 = x1 + (size1/2);
-  top1 = y1 - (size1/2);
-  bottom1 = y1 + (size1/2);
-  left2 = x2 - (size2/2);
-  right2 = x2 + (size2/2);
-  top2 = y2 - (size2/2);
-  bottom2 = y2 + (size2/2);
-  return !(left1 > right2 || left2 > right1 || top1 > bottom2 || top2 > bottom1);
-};
-
-init();
-
-
-});
+//init();
