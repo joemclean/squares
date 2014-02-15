@@ -1,3 +1,7 @@
+// |------------------------|
+// | Audio Setup            |
+// |------------------------|
+
 var context = new webkitAudioContext();
 var oscillatorOneNode = context.createOscillator();
 var oscillatorOneControl = context.createGainNode();
@@ -28,12 +32,13 @@ outputControl.gain.value = 1.0;
 
 $(window).load(function() {
 
-// Last updated August 2010 by Simon Sarris
+// Many thanks to Simon Sarris, who inspired the drag and drop code.
 // www.simonsarris.com
-// sarris@acm.org
-//
-// Free to use and distribute at will
-// So long as you are nice to people, etc
+
+// |------------------------|
+// | Node Objects           |
+// |------------------------|
+
 
 //Box object to hold data for all drawn rects
 function Box() {
@@ -58,6 +63,10 @@ function addRect(x, y, w, fill, control, io) {
   invalidate();
 }
 
+// |------------------------|
+// | Setup                  |
+// |------------------------|
+
 // holds all our rectangles
 var boxes = []; 
 
@@ -66,22 +75,14 @@ var ctx;
 var WIDTH;
 var HEIGHT;
 var INTERVAL = 20;  // how often, in milliseconds, we check to see if a redraw is needed
-
 var isDrag = false;
-var mx, my; // mouse coordinates
+var mouseX, my; // mouse coordinates
 
- // when set to true, the canvas will redraw everything
- // invalidate() just sets this to false right now
- // we want to call invalidate() whenever we make a change
-var canvasValid = false;
+var canvasValid = false; // whether canvas is up to date
 
-// The node (if any) being selected.
-// If in the future we want to select multiple objects, this will get turned into an array
-var mySel; 
-
-// The selection color and width. Right now we have a red selection with a small width
-var mySelColor = '#CC0000';
-var mySelWidth = 2;
+var mySelection; 
+var mySelectionColor = '#CC0000'; //outline color
+var mySelectionWidth = 2; //outline width
 
 // we use a fake canvas to draw individual shapes for selection testing
 var ghostcanvas;
@@ -134,6 +135,10 @@ function init() {
   addRect(200, 200, 100, 'rgba(100,200,0,.5', outputControl, "in");
 }
 
+// |------------------------|
+// |        Draw cycle      |
+// |------------------------|
+
 function draw() {
   if (canvasValid == false) {
     clear(ctx);
@@ -149,13 +154,13 @@ function draw() {
     
     // draw selection
     // right now this is just a stroke along the edge of the selected box
-    if (mySel != null) {
-      ctx.strokeStyle = mySelColor;
-      ctx.lineWidth = mySelWidth;
-      ctx.strokeRect(mySel.x,mySel.y,mySel.w,mySel.w);
-      check_collisions(mySel);
-      console.log(mySel.control + ' was selected');
-      console.log(mySel.control.gain.value + ' is the gain');
+    if (mySelection != null) {
+      ctx.strokeStyle = mySelectionColor;
+      ctx.lineWidth = mySelectionWidth;
+      ctx.strokeRect(mySelection.x,mySelection.y,mySelection.w,mySelection.w);
+      check_collisions(mySelection);
+      console.log(mySelection.control + ' was selected');
+      console.log(mySelection.control.gain.value + ' is the gain');
     }
     
     // Add stuff you want drawn on top all the time here
@@ -181,13 +186,19 @@ function drawshape(context, shape, fill) {
   context.fillRect(shape.x,shape.y,shape.w,shape.w);
 }
 
+// |------------------------|
+// | Mouse Input Processing |
+// |------------------------|
+
+
+
 // Happens when the mouse is moving inside the canvas
 function myMove(e){
   if (isDrag){
     getMouse(e);
     
-    mySel.x = mx - offsetx;
-    mySel.y = my - offsety;   
+    mySelection.x = mouseX - offsetx;
+    mySelection.y = mouseY - offsety;   
     
     // something is changing position so we better invalidate the canvas!
     invalidate();
@@ -204,16 +215,16 @@ function myDown(e){
     drawshape(gctx, boxes[i], 'black');
     
     // get image data at the mouse x,y pixel
-    var imageData = gctx.getImageData(mx, my, 1, 1);
-    var index = (mx + my * imageData.width) * 4;
+    var imageData = gctx.getImageData(mouseX, mouseY, 1, 1);
+    var index = (mouseX + mouseY * imageData.width) * 4;
     
     // if the mouse pixel exists, select and break
     if (imageData.data[3] > 0) {
-      mySel = boxes[i];
-      offsetx = mx - mySel.x;
-      offsety = my - mySel.y;
-      mySel.x = mx - offsetx;
-      mySel.y = my - offsety;
+      mySelection = boxes[i];
+      offsetx = mouseX - mySelection.x;
+      offsety = mouseY - mySelection.y;
+      mySelection.x = mouseX - offsetx;
+      mySelection.y = mouseY - offsety;
       isDrag = true;
       canvas.onmousemove = myMove;
       invalidate();
@@ -223,7 +234,7 @@ function myDown(e){
     
   }
   // havent returned means we have selected nothing
-  mySel = null;
+  mySelection = null;
   // clear the ghost canvas for next time
   clear(gctx);
   invalidate();
@@ -238,7 +249,7 @@ function invalidate() {
   canvasValid = false;
 }
 
-// Sets mx,my to the mouse position relative to the canvas
+// Sets mouseX,mouseY to the mouse position relative to the canvas
 // unfortunately this can be tricky, we have to worry about padding and borders
 function getMouse(e) {
       var element = canvas, offsetX = 0, offsetY = 0;
@@ -257,9 +268,14 @@ function getMouse(e) {
       offsetX += styleBorderLeft;
       offsetY += styleBorderTop;
 
-      mx = e.pageX - offsetX;
-      my = e.pageY - offsetY
+      mouseX = e.pageX - offsetX;
+      mouseY = e.pageY - offsetY
 }
+
+// |--------------------|
+// | Collision Checking |
+// |--------------------|
+
 
 rect_collision = function(x1, y1, size1, x2, y2, size2) {
   var bottom1, bottom2, left1, left2, right1, right2, top1, top2;
@@ -274,43 +290,42 @@ rect_collision = function(x1, y1, size1, x2, y2, size2) {
   return !(left1 > right2 || left2 > right1 || top1 > bottom2 || top2 > bottom1);
 };
 
-function check_collisions (mySel) {
+function check_collisions (mySelection) {
   var l = boxes.length;
   for (var i = 0; i < l; i++) {
     box = boxes[i]
-    if (box === mySel) {
-      //do nothing
-    } else {
-      if (rect_collision(box.x,box.y,box.w,mySel.x,mySel.y,mySel.w)) {
-        console.log('overlap between ' + box.io + ' and ' + mySel.io +'!');
-        if (mySel.io == "in" && box.io == "out") {
-          box.control.gain.value = 1;
-          console.log('Your selected output hit an input.');
-          console.log("on: " + oscillatorOneControl.gain.value + " | " + outputControl.gain.value);
-        } else if (mySel.io == "out" && box.io == "in") {
-          mySel.control.gain.value = 1;
-          console.log('Your selected input hit an output.');
-          console.log("on: " + oscillatorOneControl.gain.value + " | " + outputControl.gain.value);
-        } else {
-          //no compatability.
-        }
+    if (box !== mySelection) {
+      if (rect_collision(box.x,box.y,box.w,mySelection.x,mySelection.y,mySelection.w)) {
+        console.log('overlap between ' + box.io + ' and ' + mySelection.io +'!');
+        establishConnection(mySelection, box);
       } else {
-        console.log('no overlap between ' + box.io + ' and ' + mySel.io +'!');
-        if (mySel.io == "in" && box.io == "out") {
-          box.control.gain.value = 0;
-          console.log('Your selected input left an output.');
-          console.log("off: " + oscillatorOneControl.gain.value + " | " + outputControl.gain.value);
-        } else if (mySel.io == "out" && box.io == "in") {
-          mySel.control.gain.value = 0;
-          console.log('Your selected output left an input.');
-          console.log("off: " + oscillatorOneControl.gain.value + " | " + outputControl.gain.value);
-        } else {
-          //no compatability.
-        }
+        severConnection(mySelection, box);
       };
     }
   }
 }
+
+function establishConnection (nodeOne, nodeTwo) {
+  if (nodeOne.io == "out" && nodeTwo.io == "in") {
+    nodeOne.control.gain.value = 1;
+    console.log('Your selected output hit an input.');
+  } else if (nodeOne.io == "in" && nodeTwo.io == "out"){
+    nodeTwo.control.gain.value = 1;
+    console.log('Your selected input hit an output.');
+  } else {
+    //no compatability.
+  }
+};
+
+function severConnection (nodeOne, nodeTwo) {
+  if (nodeOne.io == "out" && nodeTwo.io == "in") {
+    nodeOne.control.gain.value = 0;
+  } else if (nodeOne.io == "in" && nodeTwo.io == "out"){
+    nodeTwo.control.gain.value = 0;
+  } else {
+    //no compatability.
+  }
+};
 
 init();
 
