@@ -1,6 +1,6 @@
 $(window).load(function() {
 
-  // Last updated August 2010 by Simon Sarris
+// Last updated August 2010 by Simon Sarris
 // www.simonsarris.com
 // sarris@acm.org
 //
@@ -12,17 +12,15 @@ function Box() {
   this.x = 0;
   this.y = 0;
   this.w = 1; // default width and height?
-  this.h = 1;
   this.fill = '#444444';
 }
 
 //Initialize a new Box, add it, and invalidate the canvas
-function addRect(x, y, w, h, fill) {
+function addRect(x, y, w, fill) {
   var rect = new Box;
   rect.x = x;
   rect.y = y;
-  rect.w = w
-  rect.h = h;
+  rect.w = w;
   rect.fill = fill;
   boxes.push(rect);
   invalidate();
@@ -96,19 +94,14 @@ function init() {
   // double click is for making new boxes
   canvas.onmousedown = myDown;
   canvas.onmouseup = myUp;
-  canvas.ondblclick = myDblClick;
   
   // add custom initialization here:
-  
-  // add an orange rectangle
-  addRect(200, 200, 100, 100, 'rgba(100,200,0,.5');
-  
-  // add a smaller blue rectangle
-  addRect(25, 90, 75, 75, 'rgba(100,0,200,.5');
+
+  addRect(200, 200, 100, 'rgba(100,200,0,.5');
+  addRect(25, 90, 75, 'rgba(100,0,200,.5');
+  addRect(300, 400, 75, 'rgba(100,0,200,.5');
 }
 
-// While draw is called as often as the INTERVAL variable demands,
-// It only ever does something if the canvas gets invalidated by our code
 function draw() {
   if (canvasValid == false) {
     clear(ctx);
@@ -126,18 +119,8 @@ function draw() {
     if (mySel != null) {
       ctx.strokeStyle = mySelColor;
       ctx.lineWidth = mySelWidth;
-      ctx.strokeRect(mySel.x,mySel.y,mySel.w,mySel.h);
-      var l = boxes.length;
-      for (var i = 0; i < l; i++) {
-        box = boxes[i]
-        if (mySel === box) {
-          //do nothing
-        } else {
-          if (rect_collision(mySel.x,mySel.y,mySel.w,box.x,box.y,box.w)) {
-            console.log('overlap!');
-          };
-        }
-      }
+      ctx.strokeRect(mySel.x,mySel.y,mySel.w,mySel.w);
+      check_collisions();
     }
     
     // Add stuff you want drawn on top all the time here
@@ -159,9 +142,9 @@ function drawshape(context, shape, fill) {
   
   // We can skip the drawing of elements that have moved off the screen:
   if (shape.x > WIDTH || shape.y > HEIGHT) return; 
-  if (shape.x + shape.w < 0 || shape.y + shape.h < 0) return;
+  if (shape.x + shape.w < 0 || shape.y + shape.w < 0) return;
   
-  context.fillRect(shape.x,shape.y,shape.w,shape.h);
+  context.fillRect(shape.x,shape.y,shape.w,shape.w);
 }
 
 // Happens when the mouse is moving inside the canvas
@@ -209,23 +192,12 @@ function myDown(e){
   mySel = null;
   // clear the ghost canvas for next time
   clear(gctx);
-  // invalidate because we might need the selection border to disappear
   invalidate();
 }
 
 function myUp(){
   isDrag = false;
   canvas.onmousemove = null;
-}
-
-// adds a new node
-function myDblClick(e) {
-  getMouse(e);
-  // for this method width and height determine the starting X and Y, too.
-  // so I left them as vars in case someone wanted to make them args for something and copy this code
-  var width = 20;
-  var height = 20;
-  addRect(mx - (width / 2), my - (height / 2), width, height, '#77DD44');
 }
 
 function invalidate() {
@@ -254,10 +226,6 @@ function getMouse(e) {
       mx = e.pageX - offsetX;
       my = e.pageY - offsetY
 }
-// If you dont want to use <body onLoad='init()'>
-// You could uncomment this init() reference and place the script reference inside the body tag
-
-//
 
 rect_collision = function(x1, y1, size1, x2, y2, size2) {
   var bottom1, bottom2, left1, left2, right1, right2, top1, top2;
@@ -271,6 +239,20 @@ rect_collision = function(x1, y1, size1, x2, y2, size2) {
   bottom2 = y2 + (size2/2);
   return !(left1 > right2 || left2 > right1 || top1 > bottom2 || top2 > bottom1);
 };
+
+function check_collisions () {
+  var l = boxes.length;
+  for (var i = 0; i < l; i++) {
+    box = boxes[i]
+    if (mySel === box) {
+      //do nothing
+    } else {
+      if (rect_collision(mySel.x,mySel.y,mySel.w,box.x,box.y,box.w)) {
+        console.log('overlap!');
+      };
+    }
+  }
+}
 
 init();
 
