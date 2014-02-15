@@ -1,3 +1,24 @@
+var context = new webkitAudioContext();
+var oscillatorOneNode = context.createOscillator();
+var oscillatorOneControl = context.createGainNode();
+var oscillatorTwoNode = context.createOscillator();
+var oscillatorTwoControl = context.createGainNode();
+var outputControl = context.createGainNode();
+
+//connect nodes
+oscillatorOneNode.connect(oscillatorOneControl);
+oscillatorOneControl.connect(outputControl);
+oscillatorTwoNode.connect(oscillatorTwoControl);
+oscillatorTwoControl.connect(outputControl);
+outputControl.connect(context.destination);
+
+oscillatorOneNode.start(0);
+oscillatorTwoNode.start(0);
+
+oscillatorOneControl.gain.value = 0.0;
+oscillatorTwoControl.gain.value = 0.0;
+outputControl.gain.value = 1.0;
+
 $(window).load(function() {
 
 // Last updated August 2010 by Simon Sarris
@@ -11,17 +32,19 @@ $(window).load(function() {
 function Box() {
   this.x = 0;
   this.y = 0;
-  this.w = 1; // default width and height?
+  this.w = 1; // default width and height
+  this.control = outputControl;
   this.fill = '#444444';
 }
 
 //Initialize a new Box, add it, and invalidate the canvas
-function addRect(x, y, w, fill) {
+function addRect(x, y, w, fill, control) {
   var rect = new Box;
   rect.x = x;
   rect.y = y;
   rect.w = w;
   rect.fill = fill;
+  rect.control = control;
   boxes.push(rect);
   invalidate();
 }
@@ -97,9 +120,9 @@ function init() {
   
   // add custom initialization here:
 
-  addRect(200, 200, 100, 'rgba(100,200,0,.5');
-  addRect(25, 90, 75, 'rgba(100,0,200,.5');
-  addRect(300, 400, 75, 'rgba(100,0,200,.5');
+  addRect(200, 200, 100, 'rgba(100,200,0,.5', oscillatorOneControl);
+  addRect(25, 90, 75, 'rgba(100,0,200,.5', oscillatorTwoControl);
+  addRect(300, 400, 75, 'rgba(100,0,200,.5', outputControl);
 }
 
 function draw() {
@@ -244,12 +267,19 @@ function check_collisions () {
   var l = boxes.length;
   for (var i = 0; i < l; i++) {
     box = boxes[i]
-    if (mySel === box) {
-      //do nothing
-    } else {
-      if (rect_collision(mySel.x,mySel.y,mySel.w,box.x,box.y,box.w)) {
-        console.log('overlap!');
-      };
+    for (var j = 0; j < l; j++) {
+      boxTwo = boxes[j]
+      if (box === boxTwo) {
+        //do nothing
+      } else {
+        if (rect_collision(box.x,box.y,box.w,boxTwo.x,boxTwo.y,boxTwo.w)) {
+          console.log('overlap!');
+          boxTwo.control.gain.value = 1.0;
+          box.control.gain.value = 1.0;
+        } else {
+          console.log('no overlap!');
+        };
+      }
     }
   }
 }
