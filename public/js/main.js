@@ -7,17 +7,26 @@ var oscillatorOneNode = context.createOscillator();
 var oscillatorOneControl = context.createGainNode();
 var oscillatorTwoNode = context.createOscillator();
 var oscillatorTwoControl = context.createGainNode();
+var oscillatorThreeNode = context.createOscillator();
+var oscillatorThreeControl = context.createGainNode();
+var oscillatorFourNode = context.createOscillator();
+var oscillatorFourControl = context.createGainNode();
 var outputControl = context.createGainNode();
 
 //connect nodes
 oscillatorOneNode.connect(oscillatorOneControl);
-oscillatorOneControl.connect(outputControl);
+//oscillatorOneControl.connect(outputControl);
 oscillatorTwoNode.connect(oscillatorTwoControl);
-oscillatorTwoControl.connect(outputControl);
+oscillatorThreeNode.connect(oscillatorThreeControl);
+oscillatorFourNode.connect(oscillatorFourControl);
+//oscillatorTwoControl.connect(outputControl);
 outputControl.connect(context.destination);
 
 oscillatorOneNode.start(0);
 oscillatorTwoNode.start(0);
+oscillatorThreeNode.start(0);
+oscillatorFourNode.start(0);
+
 
 oscillatorOneNode.type = 1;
 oscillatorOneNode.frequency.value = 220;
@@ -26,8 +35,18 @@ oscillatorTwoNode.type = 2;
 oscillatorTwoNode.frequency.value = 110;
 oscillatorTwoNode.detune.value = 10;
 
+oscillatorThreeNode.type = 3;
+oscillatorThreeNode.frequency.value = 164.81;
+oscillatorThreeNode.detune.value = 20;
+
+oscillatorFourNode.type = 2;
+oscillatorFourNode.frequency.value = 138;
+oscillatorFourNode.detune.value = 5;
+
 oscillatorOneControl.gain.value = 0;
 oscillatorTwoControl.gain.value = 0.0;
+oscillatorThreeControl.gain.value = 0.0;
+oscillatorFourControl.gain.value = 0.0;
 outputControl.gain.value = 1.0;
 
 $(window).load(function() {
@@ -132,6 +151,8 @@ function init() {
 
   addRect(25, 90, 75, 'rgba(100,0,200,.5', oscillatorTwoControl, "out");
   addRect(300, 400, 75, 'rgba(100,0,200,.5', oscillatorOneControl, "out");
+  addRect(700, 200, 75, 'rgba(100,0,200,.5', oscillatorThreeControl, "out");
+  addRect(500, 500, 75, 'rgba(100,0,200,.5', oscillatorFourControl, "out");
   addRect(200, 200, 100, 'rgba(100,200,0,.5', outputControl, "in");
 }
 
@@ -307,9 +328,11 @@ function check_collisions (mySelection) {
 
 function establishConnection (nodeOne, nodeTwo) {
   if (nodeOne.io == "out" && nodeTwo.io == "in") {
+    nodeOne.control.connect(nodeTwo.control);
     nodeOne.control.gain.value = 1;
     console.log('Your selected output hit an input.');
   } else if (nodeOne.io == "in" && nodeTwo.io == "out"){
+    nodeTwo.control.connect(nodeOne.control);
     nodeTwo.control.gain.value = 1;
     console.log('Your selected input hit an output.');
   } else {
@@ -320,8 +343,10 @@ function establishConnection (nodeOne, nodeTwo) {
 function severConnection (nodeOne, nodeTwo) {
   if (nodeOne.io == "out" && nodeTwo.io == "in") {
     nodeOne.control.gain.value = 0;
+    nodeOne.control.disconnect(nodeTwo.control);
   } else if (nodeOne.io == "in" && nodeTwo.io == "out"){
     nodeTwo.control.gain.value = 0;
+    nodeTwo.control.disconnect(nodeOne);
   } else {
     //no compatability.
   }
