@@ -7,16 +7,14 @@ var outputControl = context.createGainNode();
 
 //connect nodes
 oscillatorOneNode.connect(oscillatorOneControl);
-oscillatorOneControl.connect(outputControl);
 oscillatorTwoNode.connect(oscillatorTwoControl);
-oscillatorTwoControl.connect(outputControl);
 outputControl.connect(context.destination);
 
 oscillatorOneNode.start(0);
 oscillatorTwoNode.start(0);
 
-oscillatorOneControl.gain.value = 0.0;
-oscillatorTwoControl.gain.value = 0.0;
+oscillatorOneControl.gain.value = 1.0;
+oscillatorTwoControl.gain.value = 1.0;
 outputControl.gain.value = 1.0;
 
 $(window).load(function() {
@@ -35,16 +33,18 @@ function Box() {
   this.w = 1; // default width and height
   this.control = outputControl;
   this.fill = '#444444';
+  this.io = "out";
 }
 
 //Initialize a new Box, add it, and invalidate the canvas
-function addRect(x, y, w, fill, control) {
+function addRect(x, y, w, fill, control, io) {
   var rect = new Box;
   rect.x = x;
   rect.y = y;
   rect.w = w;
   rect.fill = fill;
   rect.control = control;
+  rect.io = io;
   boxes.push(rect);
   invalidate();
 }
@@ -120,14 +120,16 @@ function init() {
   
   // add custom initialization here:
 
-  addRect(200, 200, 100, 'rgba(100,200,0,.5', oscillatorOneControl);
-  addRect(25, 90, 75, 'rgba(100,0,200,.5', oscillatorTwoControl);
-  addRect(300, 400, 75, 'rgba(100,0,200,.5', outputControl);
+  addRect(200, 200, 100, 'rgba(100,200,0,.5', oscillatorOneControl, "out");
+  addRect(25, 90, 75, 'rgba(100,0,200,.5', oscillatorTwoControl, "out");
+  addRect(300, 400, 75, 'rgba(100,0,200,.5', outputControl, "in");
 }
 
 function draw() {
   if (canvasValid == false) {
+    check_collisions();
     clear(ctx);
+
     
     // Add stuff you want drawn in the background all the time here
     
@@ -143,11 +145,9 @@ function draw() {
       ctx.strokeStyle = mySelColor;
       ctx.lineWidth = mySelWidth;
       ctx.strokeRect(mySel.x,mySel.y,mySel.w,mySel.w);
-      check_collisions();
     }
     
     // Add stuff you want drawn on top all the time here
-    
     canvasValid = true;
   }
 }
@@ -274,10 +274,19 @@ function check_collisions () {
       } else {
         if (rect_collision(box.x,box.y,box.w,boxTwo.x,boxTwo.y,boxTwo.w)) {
           console.log('overlap!');
-          boxTwo.control.gain.value = 1.0;
-          box.control.gain.value = 1.0;
+          if (box.io == "out" && boxTwo.io == "in") {
+            box.control.connect(boxTwo.control);
+            console.log('connection established!');
+          } else if (box.io == "in" && boxTwo.io == "out") {
+            boxTwo.control.connect(box.control);
+            console.log('connection established!');
+          } else {
+            //no compatability.
+          }
         } else {
           console.log('no overlap!');
+          box.control.disconnect(boxTwo.control);
+          boxTwo.control.disconnect(box.control);
         };
       }
     }
