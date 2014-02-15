@@ -7,14 +7,23 @@ var outputControl = context.createGainNode();
 
 //connect nodes
 oscillatorOneNode.connect(oscillatorOneControl);
+oscillatorOneControl.connect(outputControl);
 oscillatorTwoNode.connect(oscillatorTwoControl);
+oscillatorTwoControl.connect(outputControl);
 outputControl.connect(context.destination);
 
 oscillatorOneNode.start(0);
 oscillatorTwoNode.start(0);
 
-oscillatorOneControl.gain.value = 1.0;
-oscillatorTwoControl.gain.value = 1.0;
+oscillatorOneNode.type = 1;
+oscillatorOneNode.frequency.value = 220;
+
+oscillatorTwoNode.type = 2;
+oscillatorTwoNode.frequency.value = 110;
+oscillatorTwoNode.detune.value = 10;
+
+oscillatorOneControl.gain.value = 0;
+oscillatorTwoControl.gain.value = 0.0;
 outputControl.gain.value = 1.0;
 
 $(window).load(function() {
@@ -31,7 +40,7 @@ function Box() {
   this.x = 0;
   this.y = 0;
   this.w = 1; // default width and height
-  this.control = outputControl;
+  this.control;
   this.fill = '#444444';
   this.io = "out";
 }
@@ -120,14 +129,13 @@ function init() {
   
   // add custom initialization here:
 
-  addRect(200, 200, 100, 'rgba(100,200,0,.5', oscillatorOneControl, "out");
   addRect(25, 90, 75, 'rgba(100,0,200,.5', oscillatorTwoControl, "out");
-  addRect(300, 400, 75, 'rgba(100,0,200,.5', outputControl, "in");
+  addRect(300, 400, 75, 'rgba(100,0,200,.5', oscillatorOneControl, "out");
+  addRect(200, 200, 100, 'rgba(100,200,0,.5', outputControl, "in");
 }
 
 function draw() {
   if (canvasValid == false) {
-    check_collisions();
     clear(ctx);
 
     
@@ -145,6 +153,9 @@ function draw() {
       ctx.strokeStyle = mySelColor;
       ctx.lineWidth = mySelWidth;
       ctx.strokeRect(mySel.x,mySel.y,mySel.w,mySel.w);
+      check_collisions(mySel);
+      console.log(mySel.control + ' was selected');
+      console.log(mySel.control.gain.value + ' is the gain');
     }
     
     // Add stuff you want drawn on top all the time here
@@ -263,37 +274,44 @@ rect_collision = function(x1, y1, size1, x2, y2, size2) {
   return !(left1 > right2 || left2 > right1 || top1 > bottom2 || top2 > bottom1);
 };
 
-function check_collisions () {
+function check_collisions (mySel) {
   var l = boxes.length;
   for (var i = 0; i < l; i++) {
     box = boxes[i]
-    for (var j = 0; j < l; j++) {
-      boxTwo = boxes[j]
-      if (box === boxTwo) {
-        //do nothing
-      } else {
-        if (rect_collision(box.x,box.y,box.w,boxTwo.x,boxTwo.y,boxTwo.w)) {
-          console.log('overlap!');
-          if (box.io == "out" && boxTwo.io == "in") {
-            box.control.connect(boxTwo.control);
-            console.log('connection established!');
-          } else if (box.io == "in" && boxTwo.io == "out") {
-            boxTwo.control.connect(box.control);
-            console.log('connection established!');
-          } else {
-            //no compatability.
-          }
+    if (box === mySel) {
+      //do nothing
+    } else {
+      if (rect_collision(box.x,box.y,box.w,mySel.x,mySel.y,mySel.w)) {
+        console.log('overlap between ' + box.io + ' and ' + mySel.io +'!');
+        if (mySel.io == "in" && box.io == "out") {
+          box.control.gain.value = 1;
+          console.log('Your selected output hit an input.');
+          console.log("on: " + oscillatorOneControl.gain.value + " | " + outputControl.gain.value);
+        } else if (mySel.io == "out" && box.io == "in") {
+          mySel.control.gain.value = 1;
+          console.log('Your selected input hit an output.');
+          console.log("on: " + oscillatorOneControl.gain.value + " | " + outputControl.gain.value);
         } else {
-          console.log('no overlap!');
-          box.control.disconnect(boxTwo.control);
-          boxTwo.control.disconnect(box.control);
-        };
-      }
+          //no compatability.
+        }
+      } else {
+        console.log('no overlap between ' + box.io + ' and ' + mySel.io +'!');
+        if (mySel.io == "in" && box.io == "out") {
+          box.control.gain.value = 0;
+          console.log('Your selected input left an output.');
+          console.log("off: " + oscillatorOneControl.gain.value + " | " + outputControl.gain.value);
+        } else if (mySel.io == "out" && box.io == "in") {
+          mySel.control.gain.value = 0;
+          console.log('Your selected output left an input.');
+          console.log("off: " + oscillatorOneControl.gain.value + " | " + outputControl.gain.value);
+        } else {
+          //no compatability.
+        }
+      };
     }
   }
 }
 
 init();
-
 
 });
