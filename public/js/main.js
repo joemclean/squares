@@ -12,14 +12,13 @@ var oscillatorThreeControl = context.createGainNode();
 var oscillatorFourNode = context.createOscillator();
 var oscillatorFourControl = context.createGainNode();
 var outputControl = context.createGainNode();
-
+var filterNode = context.createBiquadFilter();
 //connect nodes
 oscillatorOneNode.connect(oscillatorOneControl);
-//oscillatorOneControl.connect(outputControl);
 oscillatorTwoNode.connect(oscillatorTwoControl);
 oscillatorThreeNode.connect(oscillatorThreeControl);
 oscillatorFourNode.connect(oscillatorFourControl);
-//oscillatorTwoControl.connect(outputControl);
+
 outputControl.connect(context.destination);
 
 oscillatorOneNode.start(0);
@@ -43,11 +42,13 @@ oscillatorFourNode.type = 2;
 oscillatorFourNode.frequency.value = 138;
 oscillatorFourNode.detune.value = 5;
 
-oscillatorOneControl.gain.value = 0;
-oscillatorTwoControl.gain.value = 0.0;
-oscillatorThreeControl.gain.value = 0.0;
-oscillatorFourControl.gain.value = 0.0;
+oscillatorOneControl.gain.value = 1;
+oscillatorTwoControl.gain.value = 1;
+oscillatorThreeControl.gain.value = 1;
+oscillatorFourControl.gain.value = 1;
 outputControl.gain.value = 1.0;
+
+filterNode.frequency.value = 700;
 
 $(window).load(function() {
 
@@ -60,25 +61,29 @@ $(window).load(function() {
 
 
 //Box object to hold data for all drawn rects
-function Box() {
+function Module() {
   this.x = 0;
   this.y = 0;
   this.w = 1; // default width and height
   this.control;
   this.fill = '#444444';
   this.io = "out";
+  this.type;
 }
 
-//Initialize a new Box, add it, and invalidate the canvas
-function addRect(x, y, w, fill, control, io) {
-  var rect = new Box;
-  rect.x = x;
-  rect.y = y;
-  rect.w = w;
-  rect.fill = fill;
-  rect.control = control;
-  rect.io = io;
-  boxes.push(rect);
+
+
+//Initialize a new Node, add it, and invalidate the canvas
+function addModule(x, y, w, fill, control, io, type) {
+  var module = new Module;
+  module.x = x;
+  module.y = y;
+  module.w = w;
+  module.fill = fill;
+  module.control = control;
+  module.io = io;
+  module.type = type;
+  modules.push(module);
   invalidate();
 }
 
@@ -87,7 +92,7 @@ function addRect(x, y, w, fill, control, io) {
 // |------------------------|
 
 // holds all our rectangles
-var boxes = []; 
+var modules = []; 
 
 var canvas;
 var ctx;
@@ -143,17 +148,18 @@ function init() {
   setInterval(draw, INTERVAL);
   
   // set our events. Up and down are for dragging,
-  // double click is for making new boxes
+  // double click is for making new modules
   canvas.onmousedown = myDown;
   canvas.onmouseup = myUp;
   
   // add custom initialization here:
 
-  addRect(25, 90, 75, 'rgba(100,0,200,.5', oscillatorTwoControl, "out");
-  addRect(300, 400, 75, 'rgba(100,0,200,.5', oscillatorOneControl, "out");
-  addRect(700, 200, 75, 'rgba(100,0,200,.5', oscillatorThreeControl, "out");
-  addRect(500, 500, 75, 'rgba(100,0,200,.5', oscillatorFourControl, "out");
-  addRect(200, 200, 100, 'rgba(100,200,0,.5', outputControl, "in");
+  addModule(25, 90, 75, 'rgba(100,0,200,.5', oscillatorTwoControl, "out", "oscillator1");
+  addModule(300, 400, 75, 'rgba(100,0,200,.5', oscillatorOneControl, "out", "oscillator2");
+  addModule(700, 200, 75, 'rgba(100,0,200,.5', oscillatorThreeControl, "out", "oscillator3");
+  addModule(500, 500, 75, 'rgba(100,0,200,.5', oscillatorFourControl, "out", "oscillator4");
+  addModule(200, 200, 150, 'rgba(100,200,0,.5', outputControl, "in", "output");
+  addModule(600, 300, 75, 'rgba(100,200,100,.5)', filterNode, "thru", "filter");
 }
 
 // |------------------------|
@@ -167,10 +173,10 @@ function draw() {
     
     // Add stuff you want drawn in the background all the time here
     
-    // draw all boxes
-    var l = boxes.length;
+    // draw all modules
+    var l = modules.length;
     for (var i = 0; i < l; i++) {
-        drawshape(ctx, boxes[i], boxes[i].fill);
+        drawshape(ctx, modules[i], modules[i].fill);
     }
     
     // draw selection
@@ -179,12 +185,11 @@ function draw() {
       ctx.strokeStyle = mySelectionColor;
       ctx.lineWidth = mySelectionWidth;
       ctx.strokeRect(mySelection.x,mySelection.y,mySelection.w,mySelection.w);
-      check_collisions(mySelection);
-      console.log(mySelection.control + ' was selected');
-      console.log(mySelection.control.gain.value + ' is the gain');
+      console.log(mySelection.type + ' was selected');
     }
     
     // Add stuff you want drawn on top all the time here
+    check_collisions();
     canvasValid = true;
   }
 }
@@ -230,10 +235,10 @@ function myMove(e){
 function myDown(e){
   getMouse(e);
   clear(gctx);
-  var l = boxes.length;
+  var l = modules.length;
   for (var i = l-1; i >= 0; i--) {
     // draw shape onto ghost context
-    drawshape(gctx, boxes[i], 'black');
+    drawshape(gctx, modules[i], 'black');
     
     // get image data at the mouse x,y pixel
     var imageData = gctx.getImageData(mouseX, mouseY, 1, 1);
@@ -241,7 +246,7 @@ function myDown(e){
     
     // if the mouse pixel exists, select and break
     if (imageData.data[3] > 0) {
-      mySelection = boxes[i];
+      mySelection = modules[i];
       offsetx = mouseX - mySelection.x;
       offsety = mouseY - mySelection.y;
       mySelection.x = mouseX - offsetx;
@@ -311,17 +316,20 @@ rect_collision = function(x1, y1, size1, x2, y2, size2) {
   return !(left1 > right2 || left2 > right1 || top1 > bottom2 || top2 > bottom1);
 };
 
-function check_collisions (mySelection) {
-  var l = boxes.length;
+function check_collisions () {
+  var l = modules.length;
   for (var i = 0; i < l; i++) {
-    box = boxes[i]
-    if (box !== mySelection) {
-      if (rect_collision(box.x,box.y,box.w,mySelection.x,mySelection.y,mySelection.w)) {
-        console.log('overlap between ' + box.io + ' and ' + mySelection.io +'!');
-        establishConnection(mySelection, box);
-      } else {
-        severConnection(mySelection, box);
-      };
+    box = modules[i]
+    for (var j = 0; j < l; j++) {
+      boxTwo = modules[j]
+      if (box !== boxTwo) {
+        if (rect_collision(box.x,box.y,box.w,boxTwo.x,boxTwo.y,boxTwo.w)) {
+          console.log('overlap between ' + box.type + ' and ' + boxTwo.type +'!');
+          establishConnection(box, boxTwo);
+        } else {
+          severConnection(box, boxTwo);
+        };
+      }
     }
   }
 }
@@ -329,24 +337,58 @@ function check_collisions (mySelection) {
 function establishConnection (nodeOne, nodeTwo) {
   if (nodeOne.io == "out" && nodeTwo.io == "in") {
     nodeOne.control.connect(nodeTwo.control);
-    nodeOne.control.gain.value = 1;
-    console.log('Your selected output hit an input.');
+    console.log(nodeOne.type +' connected to ' + nodeTwo.type);
+
   } else if (nodeOne.io == "in" && nodeTwo.io == "out"){
     nodeTwo.control.connect(nodeOne.control);
-    nodeTwo.control.gain.value = 1;
-    console.log('Your selected input hit an output.');
+    console.log(nodeTwo.type +' connected to ' + nodeOne.type);
+
+  } else if (nodeOne.io == "thru" && nodeTwo.io == "in") {
+    nodeOne.control.connect(nodeTwo.control);
+    console.log(nodeOne.type +' connected to ' + nodeTwo.type);
+
+  } else if (nodeOne.io == "in" && nodeTwo.io == "thru"){
+    nodeTwo.control.connect(nodeOne.control);
+    console.log(nodeTwo.type +' connected to ' + nodeOne.type);
+
+  } else if (nodeOne.io == "thru" && nodeTwo.io == "out") {
+    nodeTwo.control.connect(nodeOne.control);
+    console.log(nodeOne.type +' connected to ' + nodeTwo.type);
+
+  } else if (nodeOne.io == "out" && nodeTwo.io == "thru"){
+    nodeOne.control.connect(nodeTwo.control);
+    console.log(nodeTwo.type +' connected to ' + nodeOne.type);
   } else {
     //no compatability.
   }
 };
 
+
 function severConnection (nodeOne, nodeTwo) {
   if (nodeOne.io == "out" && nodeTwo.io == "in") {
-    nodeOne.control.gain.value = 0;
     nodeOne.control.disconnect(nodeTwo.control);
+    console.log(nodeOne.type +' disconnected from ' + nodeTwo.type);
+
   } else if (nodeOne.io == "in" && nodeTwo.io == "out"){
-    nodeTwo.control.gain.value = 0;
     nodeTwo.control.disconnect(nodeOne);
+    console.log(nodeTwo.type +' disconnected from ' + nodeOne.type);
+
+  } else if (nodeOne.io == "thru" && nodeTwo.io == "in") {
+    nodeOne.control.disconnect(nodeTwo.control);
+    console.log(nodeOne.type +' disconnected from ' + nodeTwo.type);
+
+  } else if (nodeOne.io == "in" && nodeTwo.io == "thru"){
+    nodeTwo.control.disconnect(nodeOne.control);
+    console.log(nodeTwo.type +' disconnected from ' + nodeOne.type);
+
+  } else if (nodeOne.io == "thru" && nodeTwo.io == "out") {
+    nodeTwo.control.disconnect(nodeOne.control);
+    console.log(nodeTwo.type +' disconnected from ' + nodeOne.type);
+
+  } else if (nodeOne.io == "out" && nodeTwo.io == "thru"){
+    nodeOne.control.disconnect(nodeTwo.control);
+    console.log(nodeOne.type +' disconnected from ' + nodeTwo.type);
+
   } else {
     //no compatability.
   }
