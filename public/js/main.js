@@ -305,14 +305,14 @@ function getMouse(e) {
 
 rect_collision = function(x1, y1, size1, x2, y2, size2) {
   var bottom1, bottom2, left1, left2, right1, right2, top1, top2;
-  left1 = x1 - (size1/2);
-  right1 = x1 + (size1/2);
-  top1 = y1 - (size1/2);
-  bottom1 = y1 + (size1/2);
-  left2 = x2 - (size2/2);
-  right2 = x2 + (size2/2);
-  top2 = y2 - (size2/2);
-  bottom2 = y2 + (size2/2);
+  left1 = x1;
+  right1 = x1 + (size1);
+  top1 = y1;
+  bottom1 = y1 + (size1);
+  left2 = x2;
+  right2 = x2 + (size2);
+  top2 = y2;
+  bottom2 = y2 + (size2);
   return !(left1 > right2 || left2 > right1 || top1 > bottom2 || top2 > bottom1);
 };
 
@@ -339,25 +339,14 @@ function establishConnection (nodeOne, nodeTwo) {
     nodeOne.control.connect(nodeTwo.control);
     console.log(nodeOne.type +' connected to ' + nodeTwo.type);
 
-  } else if (nodeOne.io == "in" && nodeTwo.io == "out"){
-    nodeTwo.control.connect(nodeOne.control);
-    console.log(nodeTwo.type +' connected to ' + nodeOne.type);
 
   } else if (nodeOne.io == "thru" && nodeTwo.io == "in") {
     nodeOne.control.connect(nodeTwo.control);
     console.log(nodeOne.type +' connected to ' + nodeTwo.type);
 
-  } else if (nodeOne.io == "in" && nodeTwo.io == "thru"){
-    nodeTwo.control.connect(nodeOne.control);
-    console.log(nodeTwo.type +' connected to ' + nodeOne.type);
-
-  } else if (nodeOne.io == "thru" && nodeTwo.io == "out") {
-    nodeTwo.control.connect(nodeOne.control);
-    console.log(nodeOne.type +' connected to ' + nodeTwo.type);
-
   } else if (nodeOne.io == "out" && nodeTwo.io == "thru"){
     nodeOne.control.connect(nodeTwo.control);
-    console.log(nodeTwo.type +' connected to ' + nodeOne.type);
+    console.log(nodeOne.type +' connected to ' + nodeTwo.type);
   } else {
     //no compatability.
   }
@@ -369,21 +358,9 @@ function severConnection (nodeOne, nodeTwo) {
     nodeOne.control.disconnect(nodeTwo.control);
     console.log(nodeOne.type +' disconnected from ' + nodeTwo.type);
 
-  } else if (nodeOne.io == "in" && nodeTwo.io == "out"){
-    nodeTwo.control.disconnect(nodeOne);
-    console.log(nodeTwo.type +' disconnected from ' + nodeOne.type);
-
   } else if (nodeOne.io == "thru" && nodeTwo.io == "in") {
     nodeOne.control.disconnect(nodeTwo.control);
     console.log(nodeOne.type +' disconnected from ' + nodeTwo.type);
-
-  } else if (nodeOne.io == "in" && nodeTwo.io == "thru"){
-    nodeTwo.control.disconnect(nodeOne.control);
-    console.log(nodeTwo.type +' disconnected from ' + nodeOne.type);
-
-  } else if (nodeOne.io == "thru" && nodeTwo.io == "out") {
-    nodeTwo.control.disconnect(nodeOne.control);
-    console.log(nodeTwo.type +' disconnected from ' + nodeOne.type);
 
   } else if (nodeOne.io == "out" && nodeTwo.io == "thru"){
     nodeOne.control.disconnect(nodeTwo.control);
