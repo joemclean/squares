@@ -13,11 +13,12 @@ var oscillatorFourNode = context.createOscillator();
 var oscillatorFourControl = context.createGainNode();
 var outputControl = context.createGainNode();
 var filterNode = context.createBiquadFilter();
+var filterNodeTwo = context.createBiquadFilter();
 //connect nodes
-oscillatorOneNode.connect(oscillatorOneControl);
-oscillatorTwoNode.connect(oscillatorTwoControl);
-oscillatorThreeNode.connect(oscillatorThreeControl);
-oscillatorFourNode.connect(oscillatorFourControl);
+// oscillatorOneNode.connect(oscillatorOneControl);
+// oscillatorTwoNode.connect(oscillatorTwoControl);
+// oscillatorThreeNode.connect(oscillatorThreeControl);
+// oscillatorFourNode.connect(oscillatorFourControl);
 
 outputControl.connect(context.destination);
 
@@ -42,13 +43,15 @@ oscillatorFourNode.type = 2;
 oscillatorFourNode.frequency.value = 138;
 oscillatorFourNode.detune.value = 5;
 
-oscillatorOneControl.gain.value = 1;
-oscillatorTwoControl.gain.value = 1;
-oscillatorThreeControl.gain.value = 1;
-oscillatorFourControl.gain.value = 1;
+oscillatorOneControl.gain.value = 1.0;
+oscillatorTwoControl.gain.value = 1.0;
+oscillatorThreeControl.gain.value = 1.0;
+oscillatorFourControl.gain.value = 1.0;
 outputControl.gain.value = 1.0;
 
 filterNode.frequency.value = 700;
+filterNodeTwo.frequency.value = 1300;
+filterNodeTwo.type = 1;
 
 $(window).load(function() {
 
@@ -67,7 +70,7 @@ function Module() {
   this.w = 1; // default width and height
   this.control;
   this.fill = '#444444';
-  this.io = "out";
+  this.io;
   this.type;
 }
 
@@ -154,12 +157,13 @@ function init() {
   
   // add custom initialization here:
 
-  addModule(25, 90, 75, 'rgba(100,0,200,.5', oscillatorTwoControl, "out", "oscillator1");
-  addModule(300, 400, 75, 'rgba(100,0,200,.5', oscillatorOneControl, "out", "oscillator2");
-  addModule(700, 200, 75, 'rgba(100,0,200,.5', oscillatorThreeControl, "out", "oscillator3");
-  addModule(500, 500, 75, 'rgba(100,0,200,.5', oscillatorFourControl, "out", "oscillator4");
-  addModule(200, 200, 150, 'rgba(100,200,0,.5', outputControl, "in", "output");
-  addModule(600, 300, 75, 'rgba(100,200,100,.5)', filterNode, "thru", "filter");
+  addModule(25, 90, 75, 'rgba(100,0,200,.5)', oscillatorOneNode, "out", "oscillator1");
+  addModule(300, 400, 75, 'rgba(100,0,200,.5)', oscillatorTwoNode, "out", "oscillator2");
+  addModule(700, 200, 75, 'rgba(100,0,200,.5)', oscillatorThreeNode, "out", "oscillator3");
+  addModule(500, 500, 75, 'rgba(100,0,200,.5)', oscillatorFourNode, "out", "oscillator4");
+  addModule(200, 200, 150, 'rgba(100,200,0,.5)', outputControl, "in", "output");
+  addModule(600, 300, 75, 'rgba(100,200,100,.5)', filterNode, "thru", "filter1");
+  addModule(700, 400, 75, 'rgba(100,200,100,.5)', filterNodeTwo, "thru", "filter2");
 }
 
 // |------------------------|
@@ -328,7 +332,7 @@ function check_collisions () {
           establishConnection(box, boxTwo);
         } else {
           severConnection(box, boxTwo);
-        };
+        }
       }
     }
   }
@@ -339,7 +343,6 @@ function establishConnection (nodeOne, nodeTwo) {
     nodeOne.control.connect(nodeTwo.control);
     console.log(nodeOne.type +' connected to ' + nodeTwo.type);
 
-
   } else if (nodeOne.io == "thru" && nodeTwo.io == "in") {
     nodeOne.control.connect(nodeTwo.control);
     console.log(nodeOne.type +' connected to ' + nodeTwo.type);
@@ -347,8 +350,8 @@ function establishConnection (nodeOne, nodeTwo) {
   } else if (nodeOne.io == "out" && nodeTwo.io == "thru"){
     nodeOne.control.connect(nodeTwo.control);
     console.log(nodeOne.type +' connected to ' + nodeTwo.type);
-  } else {
-    //no compatability.
+  } else if (nodeOne.io == "thru" && nodeTwo.io == "thru"){
+    nodeOne.control.connect(nodeTwo.control);
   }
 };
 
@@ -363,7 +366,7 @@ function severConnection (nodeOne, nodeTwo) {
     console.log(nodeOne.type +' disconnected from ' + nodeTwo.type);
 
   } else if (nodeOne.io == "out" && nodeTwo.io == "thru"){
-    nodeOne.control.disconnect(nodeTwo.control);
+    //nodeOne.control.disconnect(nodeTwo.control);
     console.log(nodeOne.type +' disconnected from ' + nodeTwo.type);
 
   } else {
