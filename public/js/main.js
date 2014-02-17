@@ -14,11 +14,17 @@ var oscillatorFourControl = context.createGainNode();
 var outputControl = context.createGainNode();
 var filterNode = context.createBiquadFilter();
 var filterNodeTwo = context.createBiquadFilter();
+
+var lfoOneNode = context.createOscillator();
+var lfoOneControl = context.createGainNode();
+
 //connect nodes
-// oscillatorOneNode.connect(oscillatorOneControl);
-// oscillatorTwoNode.connect(oscillatorTwoControl);
-// oscillatorThreeNode.connect(oscillatorThreeControl);
-// oscillatorFourNode.connect(oscillatorFourControl);
+oscillatorOneNode.connect(oscillatorOneControl);
+oscillatorTwoNode.connect(oscillatorTwoControl);
+oscillatorThreeNode.connect(oscillatorThreeControl);
+oscillatorFourNode.connect(oscillatorFourControl);
+
+lfoOneNode.connect(lfoOneControl);
 
 outputControl.connect(context.destination);
 
@@ -26,6 +32,7 @@ oscillatorOneNode.start(0);
 oscillatorTwoNode.start(0);
 oscillatorThreeNode.start(0);
 oscillatorFourNode.start(0);
+lfoOneNode.start(0);
 
 
 oscillatorOneNode.type = 1;
@@ -43,14 +50,19 @@ oscillatorFourNode.type = 2;
 oscillatorFourNode.frequency.value = 138;
 oscillatorFourNode.detune.value = 5;
 
+lfoOneNode.frequency.value = 0.5;
+
 oscillatorOneControl.gain.value = 1.0;
 oscillatorTwoControl.gain.value = 1.0;
 oscillatorThreeControl.gain.value = 1.0;
 oscillatorFourControl.gain.value = 1.0;
+lfoOneControl.gain.value = 15.0;
 outputControl.gain.value = 1.0;
 
-filterNode.frequency.value = 700;
-filterNodeTwo.frequency.value = 1300;
+filterNode.frequency.value = 2000;
+filterNode.Q.value = 10;
+
+filterNodeTwo.frequency.value = 7000;
 filterNodeTwo.type = 1;
 
 $(window).load(function() {
@@ -157,13 +169,14 @@ function init() {
   
   // add custom initialization here:
 
-  addModule(25, 90, 75, 'rgba(100,0,200,.5)', oscillatorOneNode, "out", "oscillator1");
-  addModule(300, 400, 75, 'rgba(100,0,200,.5)', oscillatorTwoNode, "out", "oscillator2");
-  addModule(700, 200, 75, 'rgba(100,0,200,.5)', oscillatorThreeNode, "out", "oscillator3");
-  addModule(500, 500, 75, 'rgba(100,0,200,.5)', oscillatorFourNode, "out", "oscillator4");
+  addModule(25, 90, 75, 'rgba(100,0,200,.5)', oscillatorOneNode, "out", "oscillator");
+  addModule(300, 400, 75, 'rgba(100,0,200,.5)', oscillatorTwoNode, "out", "oscillator");
+  addModule(700, 200, 75, 'rgba(100,0,200,.5)', oscillatorThreeNode, "out", "oscillator");
+  addModule(500, 500, 75, 'rgba(100,0,200,.5)', oscillatorFourNode, "out", "oscillator");
   addModule(200, 200, 150, 'rgba(100,200,0,.5)', outputControl, "in", "output");
-  addModule(600, 300, 75, 'rgba(100,200,100,.5)', filterNode, "thru", "filter1");
-  addModule(700, 400, 75, 'rgba(100,200,100,.5)', filterNodeTwo, "thru", "filter2");
+  addModule(600, 300, 75, 'rgba(100,200,100,.5)', filterNode, "thru", "filter");
+  addModule(700, 400, 75, 'rgba(100,200,100,.5)', filterNodeTwo, "thru", "filter");
+  addModule(100, 500, 75, 'rgba(50,200,200,.5)', lfoOneControl, "mod", "lfo");
 }
 
 // |------------------------|
@@ -352,6 +365,10 @@ function establishConnection (nodeOne, nodeTwo) {
     console.log(nodeOne.type +' connected to ' + nodeTwo.type);
   } else if (nodeOne.io == "thru" && nodeTwo.io == "thru"){
     nodeOne.control.connect(nodeTwo.control);
+  } else if (nodeOne.io == "mod" && nodeTwo.type == "filter") {
+    nodeOne.control.gain.value = 1000;
+    nodeOne.control.connect(nodeTwo.control.frequency);
+    console.log('mod connected to osc');
   }
 };
 
@@ -368,9 +385,10 @@ function severConnection (nodeOne, nodeTwo) {
   } else if (nodeOne.io == "out" && nodeTwo.io == "thru"){
     //nodeOne.control.disconnect(nodeTwo.control);
     console.log(nodeOne.type +' disconnected from ' + nodeTwo.type);
-
-  } else {
-    //no compatability.
+  } else if (nodeOne.io == "mod" && nodeTwo.type == "oscillator") {
+    nodeOne.control.gain.value == 5;
+    nodeOne.control.disconnect(nodeTwo.control.detune);
+    console.log('mod disconnected from osc');
   }
 };
 
